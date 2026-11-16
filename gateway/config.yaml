@@ -1,0 +1,131 @@
+model_list:
+  - model_name: ticket-classification
+    litellm_params:
+      model: openai/gpt-fake-large
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 5
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+  - model_name: ticket-classification-tech
+    litellm_params:
+      model: anthropic/claude-fake-large
+      api_base: http://provider-fake:8090/anthropic
+      api_key: os.environ/FAKE_ANTHROPIC_KEY
+      timeout: 5
+      input_cost_per_token: 0.000003
+      output_cost_per_token: 0.000015
+  - model_name: ticket-classification-mini
+    litellm_params:
+      model: openai/gpt-fake-mini
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 5
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000006
+
+  - model_name: order-extraction
+    litellm_params:
+      model: openai/gpt-fake-large
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 10
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+  - model_name: order-extraction-tech
+    litellm_params:
+      model: anthropic/claude-fake-large
+      api_base: http://provider-fake:8090/anthropic
+      api_key: os.environ/FAKE_ANTHROPIC_KEY
+      timeout: 10
+      input_cost_per_token: 0.000003
+      output_cost_per_token: 0.000015
+
+  - model_name: reply-suggestion
+    litellm_params:
+      model: anthropic/claude-fake-large
+      api_base: http://provider-fake:8090/anthropic
+      api_key: os.environ/FAKE_ANTHROPIC_KEY
+      timeout: 55
+      input_cost_per_token: 0.000003
+      output_cost_per_token: 0.000015
+  - model_name: reply-suggestion-tech
+    litellm_params:
+      model: openai/gpt-fake-large
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 55
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+  - model_name: reply-suggestion-mini
+    litellm_params:
+      model: openai/gpt-fake-mini
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 55
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000006
+
+  - model_name: ticket-topics
+    litellm_params:
+      model: anthropic/claude-fake-large
+      api_base: http://provider-fake:8090/anthropic
+      api_key: os.environ/FAKE_ANTHROPIC_KEY
+      timeout: 20
+      input_cost_per_token: 0.000003
+      output_cost_per_token: 0.000015
+  - model_name: ticket-topics-tech
+    litellm_params:
+      model: openai/gpt-fake-large
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 20
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+  - model_name: ticket-topics-mini
+    litellm_params:
+      model: openai/gpt-fake-mini
+      api_base: http://provider-fake:8090/openai/v1
+      api_key: os.environ/FAKE_OPENAI_KEY
+      timeout: 20
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000006
+
+router_settings:
+  num_retries: 0
+  retry_after: 0.5
+  retry_policy:
+    InternalServerErrorRetries: 1
+    ServiceUnavailableErrorRetries: 1
+    RateLimitErrorRetries: 1
+    TimeoutErrorRetries: 0
+    DefaultRetries: 0
+  model_group_retry_policy:
+    reply-suggestion:
+      InternalServerErrorRetries: 0
+      ServiceUnavailableErrorRetries: 0
+      RateLimitErrorRetries: 0
+      TimeoutErrorRetries: 0
+      DefaultRetries: 0
+    reply-suggestion-tech:
+      InternalServerErrorRetries: 0
+      ServiceUnavailableErrorRetries: 0
+      RateLimitErrorRetries: 0
+      TimeoutErrorRetries: 0
+      DefaultRetries: 0
+    reply-suggestion-mini:
+      InternalServerErrorRetries: 0
+      ServiceUnavailableErrorRetries: 0
+      RateLimitErrorRetries: 0
+      TimeoutErrorRetries: 0
+      DefaultRetries: 0
+  max_fallbacks: 2
+  timeout: 14
+  fallbacks:
+    - ticket-classification: [ticket-classification-tech, ticket-classification-mini]
+    - order-extraction: [order-extraction-tech]
+    - reply-suggestion: [reply-suggestion-tech, reply-suggestion-mini]
+    - ticket-topics: [ticket-topics-tech, ticket-topics-mini]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

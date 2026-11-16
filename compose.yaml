@@ -1,9 +1,50 @@
 services:
+  litellm-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-litellm-db-dev}
+    volumes:
+      - litellm_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
   provider-fake:
     build: ./provider-fake
     env_file: .env
     ports:
       - "8090:8090"
+
+  gateway:
+    image: ghcr.io/berriai/litellm:v1.102.1
+    env_file: .env
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-gateway-dev}
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin}
+      GATEWAY_APP_KEY: ${GATEWAY_APP_KEY:-sk-helpdesk-app-local}
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm-db-dev}@litellm-db:5432/litellm
+    volumes:
+      - ./gateway/config.yaml:/app/config.yaml:ro
+      - ./gateway/provision.py:/app/provision.py:ro
+    entrypoint: ["sh", "-c"]
+    command: ["litellm --config /app/config.yaml --port 4000 & proxy=$$!; python /app/provision.py; wait $$proxy"]
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:4000/key/info',headers={'Authorization':'Bearer '+os.environ['GATEWAY_APP_KEY']}); urllib.request.urlopen(r)"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      provider-fake:
+        condition: service_healthy
+      litellm-db:
+        condition: service_healthy
 
   edge:
     image: nginx:1.27-alpine
@@ -17,14 +58,21 @@ services:
 
   app:
     build: ./app
-    env_file: .env
+    environment:
+      GATEWAY_URL: http://gateway:4000/v1
+      GATEWAY_API_KEY: ${GATEWAY_APP_KEY:-sk-helpdesk-app-local}
+      GATEWAY_TIMEOUT: 14
     volumes:
       - ./data:/data:ro
+      - ./tests:/tests:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
       interval: 2s
       timeout: 3s
       retries: 20
     depends_on:
-      provider-fake:
+      gateway:
         condition: service_healthy
+
+volumes:
+  litellm_db_data:
