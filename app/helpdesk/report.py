@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import HTTPException
 
@@ -14,11 +15,18 @@ def topics(period: PeriodInput, gateway: TextGenerationGateway,
         raise HTTPException(status_code=422, detail="A data inicial é posterior à data final")
 
     selected = ticket_repository.in_period(period.start, period.end)
-    totals: dict[str, dict] = {}
-    for first in range(0, len(selected), TICKETS_PER_CALL):
-        batch = selected[first:first + TICKETS_PER_CALL]
+    batches = [selected[first:first + TICKETS_PER_CALL]
+               for first in range(0, len(selected), TICKETS_PER_CALL)]
+
+    def generate(batch):
         content = "\n".join(f"[{ticket['id']}] {ticket['text']}" for ticket in batch)
-        text = gateway.generate("ticket-topics", "topics", content)
+        return gateway.generate("ticket-topics", "topics", content)
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        answers = list(executor.map(generate, batches))
+
+    totals: dict[str, dict] = {}
+    for text in answers:
         try:
             answer = json.loads(text)
         except (TypeError, json.JSONDecodeError) as exc:
