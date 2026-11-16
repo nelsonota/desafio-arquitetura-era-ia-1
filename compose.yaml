@@ -1,4 +1,18 @@
 services:
+  litellm-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-litellm-db-dev}
+    volumes:
+      - litellm_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
   provider-fake:
     build: ./provider-fake
     env_file: .env
@@ -10,6 +24,9 @@ services:
     env_file: .env
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-gateway-dev}
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin}
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm-db-dev}@litellm-db:5432/litellm
     volumes:
       - ./gateway/config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml", "--port", "4000"]
@@ -22,6 +39,8 @@ services:
       retries: 20
     depends_on:
       provider-fake:
+        condition: service_healthy
+      litellm-db:
         condition: service_healthy
 
   edge:
@@ -49,3 +68,6 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
+
+volumes:
+  litellm_db_data:

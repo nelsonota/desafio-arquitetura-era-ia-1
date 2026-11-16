@@ -14,6 +14,8 @@ docker compose up -d --build gateway
 
 O app recebe apenas `GATEWAY_API_KEY` e `GATEWAY_URL`; as variáveis `FAKE_OPENAI_KEY` e `FAKE_ANTHROPIC_KEY` são injetadas no gateway e no provider-fake. `LITELLM_MASTER_KEY` autentica as chamadas da aplicação ao proxy. O Compose define um valor local padrão, ou você pode defini-lo em `.env`.
 
+A LiteLLM Admin UI fica em `http://localhost:4000/ui` e usa `admin` / `admin` no ambiente local. O login exige PostgreSQL; o Compose sobe `litellm-db` e persiste os dados no volume `litellm_db_data`. Altere `LITELLM_UI_USERNAME`, `LITELLM_UI_PASSWORD` e `LITELLM_DB_PASSWORD` em `.env` para personalizar os valores locais.
+
 Para reproduzir a medição da v2:
 
 ```sh
