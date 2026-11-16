@@ -6,6 +6,7 @@ import urllib.error
 import urllib.request
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 EDGE = os.environ.get("HELPDESK_URL", "http://edge").rstrip("/")
 GATEWAY = os.environ.get("GATEWAY_URL", "http://gateway:4000/v1").rstrip("/").removesuffix("/v1")
@@ -104,6 +105,17 @@ class RuntimeContracts(unittest.TestCase):
             total_latency = time.monotonic() - started
             self.assertIn("event: end", remaining)
         self.assertLess(first_latency, total_latency / 2)
+        events = first + remaining
+        chunks = [
+            json.loads(line.removeprefix("data: "))["chunk"]
+            for line in events.splitlines()
+            if line.startswith("data: {") and '"chunk"' in line
+        ]
+        expected = json.loads(
+            (Path(__file__).parent.parent / "characterization" / "suggestion.json").read_text(encoding="utf-8")
+        )["suggestion"]
+        self.assertTrue(chunks)
+        self.assertEqual("".join(chunks), expected)
         reset_provider()
         request(FAKE + "/admin/failures", {
             "provider": "anthropic", "model": "claude-fake-large", "mode": "midstream_error",
