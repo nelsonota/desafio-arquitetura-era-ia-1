@@ -4,15 +4,15 @@ A linha de base v1 usava FastAPI e chamava diretamente dois SDKs. As medições 
 
 ## Arquitetura v2 desacoplada
 
-`app/helpdesk/ports.py` declara `TextGenerationGateway` e `TicketRepository`. As features recebem essas dependências; `main.py` compõe o cliente HTTP do gateway e o repositório JSONL. `app/helpdesk/adapters/gateway_client.py` é o único componente da aplicação que chama o gateway. Os SDKs OpenAI/Anthropic e as chaves dos providers ficam no serviço `gateway`, configurado em `gateway/config.toml`.
+`app/helpdesk/ports.py` declara `TextGenerationGateway` e `TicketRepository`. As features recebem essas dependências; `main.py` compõe o cliente HTTP do gateway e o repositório JSONL. `app/helpdesk/adapters/gateway_client.py` é o único componente da aplicação que chama o gateway. O serviço `gateway` usa LiteLLM Proxy com o mapeamento versionado em `gateway/config.yaml`; as chaves dos providers ficam somente no ambiente do LiteLLM e do `provider-fake`.
 
-As capacidades lógicas são `ticket-classification`, `order-extraction`, `reply-suggestion` e `ticket-topics`. Para trocar um modelo físico, altere o modelo correspondente em `gateway/config.toml` e recrie somente o serviço `gateway`:
+As capacidades lógicas são `ticket-classification`, `order-extraction`, `reply-suggestion` e `ticket-topics`. Para trocar um modelo físico, altere o modelo correspondente em `gateway/config.yaml` e recrie somente o serviço `gateway`:
 
 ```sh
 docker compose up -d --build gateway
 ```
 
-O app recebe apenas `GATEWAY_API_KEY` e `GATEWAY_URL`; as variáveis `FAKE_OPENAI_KEY` e `FAKE_ANTHROPIC_KEY` são injetadas no gateway e no provider-fake. O Compose define uma chave local padrão para o gateway, ou você pode defini-la em `.env`.
+O app recebe apenas `GATEWAY_API_KEY` e `GATEWAY_URL`; as variáveis `FAKE_OPENAI_KEY` e `FAKE_ANTHROPIC_KEY` são injetadas no gateway e no provider-fake. `LITELLM_MASTER_KEY` autentica as chamadas da aplicação ao proxy. O Compose define um valor local padrão, ou você pode defini-lo em `.env`.
 
 Para reproduzir a medição da v2:
 

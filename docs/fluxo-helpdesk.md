@@ -22,8 +22,8 @@ flowchart TD
     Port --> GatewayClient[adapters.gateway_client.HttpGatewayClient]
     RepoPort --> FileAdapter[adapters.ticket_file_repository.JsonlTicketRepository]
 
-    GatewayClient --> Gateway[AI Gateway: POST /v1/generate]
-    Gateway --> Mapping[Nome lógico para provider/modelo físico]
+    GatewayClient --> Gateway[LiteLLM Proxy: POST /v1/chat/completions]
+    Gateway --> Mapping[Model lógico para provider/modelo físico]
     Mapping --> FakeProvider[provider-fake]
     FileAdapter --> JSONL[/data/tickets.jsonl]
 ```
@@ -42,6 +42,6 @@ flowchart TD
 
 `main.py` é o ponto de composição: instancia `HttpGatewayClient` e `JsonlTicketRepository` e os passa aos casos de uso. O único componente em `app/` que envia requisições ao gateway é `adapters/gateway_client.py`.
 
-O serviço `gateway` autentica a chave própria da aplicação, resolve capacidades lógicas conforme `gateway/config.toml` e chama OpenAI ou Anthropic no `provider-fake`. As chaves dos providers ficam no ambiente do gateway, não no serviço `app`. Trocar o modelo físico exige alterar o mapeamento do gateway; o código da aplicação continua usando as capacidades lógicas.
+O serviço `gateway` é o LiteLLM Proxy: autentica `LITELLM_MASTER_KEY`, resolve o alias lógico informado em `model` conforme `gateway/config.yaml` e chama OpenAI ou Anthropic no `provider-fake`. As chaves dos providers ficam no ambiente do gateway, não no serviço `app`. Trocar o modelo físico exige alterar o mapeamento do gateway; o código da aplicação continua usando as capacidades lógicas.
 
 `schemas.py` mantém os contratos HTTP e os tipos de dados concretos. O adaptador de arquivo lê `/data/tickets.jsonl`; o caso de uso do relatório mantém validação de período, loteamento e agregação.

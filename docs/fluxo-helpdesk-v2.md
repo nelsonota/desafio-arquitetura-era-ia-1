@@ -25,8 +25,8 @@ flowchart TD
     GenerationPort --> GatewayAdapter["adapters.gateway_client.HttpGatewayClient"]
     TicketPort --> FileAdapter["adapters.ticket_file_repository.JsonlTicketRepository"]
 
-    GatewayAdapter --> Gateway["AI Gateway: POST /v1/generate"]
-    Gateway --> Resolve["Resolve capability in gateway/config.toml"]
+    GatewayAdapter --> Gateway["LiteLLM Proxy: POST /v1/chat/completions"]
+    Gateway --> Resolve["model field resolves logical alias in gateway/config.yaml"]
     Resolve --> Providers[provider-fake: OpenAI or Anthropic API]
     FileAdapter --> TicketsFile["/data/tickets.jsonl"]
 ```
@@ -45,5 +45,5 @@ flowchart TD
 - Os módulos de feature dependem dos ports e dos schemas; não importam os SDKs nem os adaptadores concretos.
 - `main.py` é o ponto de composição: instancia `HttpGatewayClient` e `JsonlTicketRepository` e os injeta nos casos de uso.
 - `adapters/gateway_client.py` é o único componente em `app/` que chama o gateway.
-- O gateway escolhe provider e modelo físico pelo nome lógico em `gateway/config.toml`. As chaves de OpenAI e Anthropic ficam no serviço `gateway`, fora do ambiente de `app`.
+- O LiteLLM Proxy escolhe provider e modelo físico pelo `model` lógico em `gateway/config.yaml`. `LITELLM_MASTER_KEY` autentica o app; as chaves de OpenAI e Anthropic ficam no ambiente do serviço `gateway`, fora do ambiente de `app`.
 - `schemas.py` mantém os contratos HTTP e os tipos de dados da aplicação. O caso de uso do relatório mantém validação, loteamento e agregação; o adaptador de arquivo faz a leitura do JSONL.
