@@ -1,6 +1,26 @@
-# Helpdesk: diagnóstico da v1
+# Helpdesk: linha de base v1 e refatoração v2
 
-A aplicação recebida usa FastAPI e chama diretamente dois SDKs. Esta etapa preserva o código original e registra sua linha de base; não há gateway nem fallback implementados ainda.
+A linha de base v1 usava FastAPI e chamava diretamente dois SDKs. As medições e o diagnóstico abaixo registram esse estado. A aplicação atual implementa a v2 desacoplada: casos de uso dependem de ports, adaptadores ficam na infraestrutura e toda chamada de modelo passa pelo serviço self-hosted `gateway`.
+
+## Arquitetura v2 desacoplada
+
+`app/helpdesk/ports.py` declara `TextGenerationGateway` e `TicketRepository`. As features recebem essas dependências; `main.py` compõe o cliente HTTP do gateway e o repositório JSONL. `app/helpdesk/adapters/gateway_client.py` é o único componente da aplicação que chama o gateway. Os SDKs OpenAI/Anthropic e as chaves dos providers ficam no serviço `gateway`, configurado em `gateway/config.toml`.
+
+As capacidades lógicas são `ticket-classification`, `order-extraction`, `reply-suggestion` e `ticket-topics`. Para trocar um modelo físico, altere o modelo correspondente em `gateway/config.toml` e recrie somente o serviço `gateway`:
+
+```sh
+docker compose up -d --build gateway
+```
+
+O app recebe apenas `GATEWAY_API_KEY` e `GATEWAY_URL`; as variáveis `FAKE_OPENAI_KEY` e `FAKE_ANTHROPIC_KEY` são injetadas no gateway e no provider-fake. O Compose define uma chave local padrão para o gateway, ou você pode defini-la em `.env`.
+
+Para reproduzir a medição da v2:
+
+```sh
+python metrics/measure.py app/helpdesk v2-decoupled
+```
+
+O fluxo atualizado está em [docs/fluxo-helpdesk.md](docs/fluxo-helpdesk.md). A suíte de caracterização não foi alterada.
 
 ## Como rodar
 

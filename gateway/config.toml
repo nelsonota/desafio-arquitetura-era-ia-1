@@ -1,0 +1,17 @@
+[capabilities.ticket-classification]
+provider = "openai"
+model = "gpt-fake-large"
+
+[capabilities.order-extraction]
+provider = "openai"
+model = "gpt-fake-large"
+
+[capabilities.reply-suggestion]
+provider = "anthropic"
+model = "claude-fake-large"
+max_tokens = 2000
+
+[capabilities.ticket-topics]
+provider = "anthropic"
+model = "claude-fake-large"
+max_tokens = 2000

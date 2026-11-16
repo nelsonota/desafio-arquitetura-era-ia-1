@@ -5,6 +5,24 @@ services:
     ports:
       - "8090:8090"
 
+  gateway:
+    build: ./gateway
+    env_file: .env
+    environment:
+      GATEWAY_API_KEY: ${GATEWAY_API_KEY:-sk-helpdesk-gateway-dev}
+    volumes:
+      - ./gateway/config.toml:/srv/config.toml:ro
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health')"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      provider-fake:
+        condition: service_healthy
+
   edge:
     image: nginx:1.27-alpine
     ports:
@@ -17,7 +35,9 @@ services:
 
   app:
     build: ./app
-    env_file: .env
+    environment:
+      GATEWAY_URL: http://gateway:8081
+      GATEWAY_API_KEY: ${GATEWAY_API_KEY:-sk-helpdesk-gateway-dev}
     volumes:
       - ./data:/data:ro
     healthcheck:
@@ -26,5 +46,5 @@ services:
       timeout: 3s
       retries: 20
     depends_on:
-      provider-fake:
+      gateway:
         condition: service_healthy
